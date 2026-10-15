@@ -8,7 +8,7 @@
 Каждый шаг: сначала тест, потом код, потом прогон связанных тестов.
 
 0. **Каркас** — `pyproject.toml` (fastapi, pydantic, anthropic, uvicorn, python-multipart; dev: pytest, httpx),
-   пакет `sentinellens/`, `tests/`. *Установка зависимостей — после подтверждения.*
+   пакет `app/`, `tests/`. *Установка зависимостей — после подтверждения.*
 1. **Модели** (`models.py`) — `AuthEvent`, `Finding`, `TriageResult`, `AnalysisReport`.
 2. **Фикстура** — `tests/fixtures/auth_sample.log`: синтетика с брутфорсом, успешным входом после неудач,
    «почти брутфорсом» (4 попытки / 6 попыток за >5 мин), мусорными строками и строкой с prompt injection.
@@ -20,7 +20,7 @@
    ≤10 мин; отрицательные кейсы: 2 неудачи, другой user/host/IP, accepted до failed, разрыв >10 мин.
 6. **Triage** (`triage.py`) + тесты с фейковым клиентом — `none` / `mock` (маркирован) / `claude`;
    Pydantic-валидация ответа, проверка event IDs, обработка невалидного JSON и отсутствия ключа.
-7. **API** (`api.py`) + `test_api.py` через `TestClient` — `POST /analyze`, `GET /health`, лимит размера файла.
+7. **API** (`main.py`) + `test_api.py` через `TestClient` — `POST /analyze`, `GET /health`, лимит размера файла.
 8. **README** — запуск, пример запроса/ответа, ограничения.
 9. *(Опционально, после подтверждения)* — один ручной прогон `triage=claude` с реальным ключом.
 

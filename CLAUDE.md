@@ -23,7 +23,7 @@ pytest tests/test_detections.py -q           # один файл
 pytest tests/test_detections.py::test_brute_force_threshold -q   # один тест
 pytest -k success_after -q                   # по имени
 
-uvicorn sentinellens.api:app --reload        # затем http://127.0.0.1:8000/docs
+uvicorn app.main:app --reload                # затем http://127.0.0.1:8000/docs
 ```
 
 ## Архитектура
@@ -34,18 +34,19 @@ uvicorn sentinellens.api:app --reload        # затем http://127.0.0.1:8000/
 auth.log (bytes) → parser → list[AuthEvent] → detections → list[Finding] → triage (optional) → AnalysisReport
 ```
 
-- `sentinellens/models.py` — все Pydantic-модели: `AuthEvent`, `Finding`, `TriageResult`, `AnalysisReport`.
-- `sentinellens/parser.py` — регулярки для `Failed password` / `Accepted password` (включая `invalid user`).
+- `app/models.py` — все Pydantic-модели. `LLMTriageOutput` — единственная схема, которую заполняет LLM
+  (`extra="forbid"`, `assert_grounded_in(finding)`); `TriageResult` оборачивает её с provenance (`llm`/`mock`).
+- `app/parser.py` — регулярки для `Failed password` / `Accepted password` (включая `invalid user`).
   Event ID детерминирован от номера строки (`evt-000042`). Неразобранные строки считаются, а не роняют разбор.
   В syslog нет года — год передаётся параметром; время трактуется как UTC.
-- `sentinellens/detections.py` — правила, без I/O и без LLM:
+- `app/detections.py` — правила, без I/O и без LLM:
   - `brute_force`: ≥5 failed с одного `src_ip` на одном `host` в скользящем окне 5 минут.
   - `success_after_failures`: `Accepted` после ≥3 failed с тем же `host + src_ip + username`, failed строго раньше
     (по времени, затем по номеру строки), разница ≤10 минут.
   Сортировка событий всегда по `(timestamp, line_no)`.
-- `sentinellens/triage.py` — режимы `none` (по умолчанию), `mock`, `claude`. Claude-клиент внедряется
+- `app/triage.py` — режимы `none` (по умолчанию), `mock`, `claude`. Claude-клиент внедряется
   зависимостью, чтобы тесты подставляли фейк.
-- `sentinellens/api.py` — FastAPI: `POST /analyze` (upload файла + `triage=none|mock|claude`), `GET /health`.
+- `app/main.py` — FastAPI: `POST /analyze` (upload файла + `triage=none|mock|claude`), `GET /health`.
   UI — только встроенный `/docs`.
 
 ## Жёсткие правила проекта
